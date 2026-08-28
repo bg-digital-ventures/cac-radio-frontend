@@ -1,0 +1,55 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Live Radio Control | CAC Radio</title>
+<link rel="stylesheet" href="../../assets/css/admin.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"></head>
+<body><div class="admin-layout">
+<aside id="adminSidebar" class="sidebar">
+  <div class="sidebar-brand"><i class="fa-solid fa-radio"></i><span>CAC Radio</span></div>
+  <nav>
+    <a href="../dashboard.html">Dashboard</a>
+    <a href="live.html">Live Control</a>
+    <a href="programmes.html">Programmes</a>
+    <a href="announcements.html">Announcements</a>
+    <a href="prayers.html">Prayer Requests</a>
+    <a href="comments.html">Comments</a>
+    <a href="messages.html">Messages</a>
+    <a href="subscribers.html">Subscribers</a>
+    <a href="branches.html" data-hq-only>Branches</a>
+    <a href="users.html" data-hq-only>Users</a>
+    <a href="settings.html" data-hq-only>Settings</a>
+  </nav>
+</aside>
+<div class="admin-main">
+<header class="topbar">
+  <button id="sidebarToggle" class="icon-btn"><i class="fa-solid fa-bars"></i></button>
+  <div class="top-actions">
+    <button data-theme-toggle class="icon-btn"><i data-theme-icon class="fa-solid fa-moon"></i></button>
+    <div class="admin-id"><strong id="adminName">Administrator</strong><small id="adminRole">admin</small></div>
+    <button id="logoutButton" class="btn danger">Logout</button>
+  </div>
+</header>
+<main class="admin-content">
+<div class="page-head"><div><span class="eyebrow">CAC Radio Admin</span><h1>Live Radio Control</h1></div></div>
+<section class="live-console">
+  <div class="live-status-card"><span id="liveState" class="state">OFFLINE</span><h2 id="broadcastIdentity">Broadcasting as...</h2><p id="micState">Microphone not selected</p></div>
+  <div class="control-grid">
+    <div class="panel">
+      <h3>Broadcast Details</h3>
+      <label>Title<input id="liveTitle" placeholder="Sunday Worship Service"></label>
+      <label>Presenter<input id="presenter" placeholder="Presenter / Minister"></label>
+      <label>Programme<select id="programmeSelect"></select></label>
+    </div>
+    <div class="panel">
+      <h3>Microphone & Live</h3>
+      <p>This phone or computer will send microphone audio to the secure radio backend.</p>
+      <button id="previewMic" class="btn ghost">Allow Microphone</button>
+      <div class="button-stack"><button id="startLive" class="btn success">Start Live</button><button id="stopLive" class="btn danger" disabled>Stop Live</button></div>
+    </div>
+  </div>
+  <div id="hqControls" class="panel relay-panel">
+    <h3>Headquarters Branch Relay</h3>
+    <p>HQ can select a branch that is currently live and make that branch the main station feed.</p>
+    <select id="hqBranchSelect"></select>
+    <div class="button-stack"><button id="connectHQ" class="btn primary">Connect Branch to HQ</button><button id="disconnectHQ" class="btn ghost">Return to HQ Feed</button></div>
+  </div>
+</section>
+
+</main></div></div><div id="toastContainer" class="toast-container"></div><script type="module" src="../../assets/js/admin/live.js"></script></body></html>

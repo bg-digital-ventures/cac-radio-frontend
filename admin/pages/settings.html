@@ -1,0 +1,46 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>System Settings | CAC Radio</title>
+<link rel="stylesheet" href="../../assets/css/admin.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"></head>
+<body><div class="admin-layout">
+<aside id="adminSidebar" class="sidebar">
+  <div class="sidebar-brand"><i class="fa-solid fa-radio"></i><span>CAC Radio</span></div>
+  <nav>
+    <a href="../dashboard.html">Dashboard</a>
+    <a href="live.html">Live Control</a>
+    <a href="programmes.html">Programmes</a>
+    <a href="announcements.html">Announcements</a>
+    <a href="prayers.html">Prayer Requests</a>
+    <a href="comments.html">Comments</a>
+    <a href="messages.html">Messages</a>
+    <a href="subscribers.html">Subscribers</a>
+    <a href="branches.html" data-hq-only>Branches</a>
+    <a href="users.html" data-hq-only>Users</a>
+    <a href="settings.html" data-hq-only>Settings</a>
+  </nav>
+</aside>
+<div class="admin-main">
+<header class="topbar">
+  <button id="sidebarToggle" class="icon-btn"><i class="fa-solid fa-bars"></i></button>
+  <div class="top-actions">
+    <button data-theme-toggle class="icon-btn"><i data-theme-icon class="fa-solid fa-moon"></i></button>
+    <div class="admin-id"><strong id="adminName">Administrator</strong><small id="adminRole">admin</small></div>
+    <button id="logoutButton" class="btn danger">Logout</button>
+  </div>
+</header>
+<main class="admin-content">
+<div class="page-head"><div><span class="eyebrow">CAC Radio Admin</span><h1>System Settings</h1></div></div>
+<form id="settingsForm" class="settings-form">
+<h2>General</h2>
+<label>Site Name<input name="general.siteName"></label><label>Contact Email<input name="general.contactEmail" type="email"></label>
+<label>Contact Phone<input name="general.contactPhone"></label><label>WhatsApp<input name="general.whatsappNumber"></label>
+<label>Address<textarea name="general.address"></textarea></label>
+<h2>Radio</h2>
+<label>Station Name<input name="radio.stationName"></label>
+<label>Public Stream URL<input name="radio.publicStreamUrl" placeholder="https://your-stream-host/live"></label>
+<label>Default Volume<input name="radio.defaultVolume" type="number" min="0" max="1" step=".1"></label>
+<h2>Social Media</h2>
+<label>Facebook<input name="social.facebook"></label><label>Instagram<input name="social.instagram"></label><label>YouTube<input name="social.youtube"></label><label>TikTok<input name="social.tiktok"></label>
+<h2>Appearance</h2><label>Default Theme<select name="appearance.defaultTheme"><option value="light">Light</option><option value="dark">Dark</option></select></label>
+<button class="btn primary">Save Settings</button>
+</form>
+
+</main></div></div><div id="toastContainer" class="toast-container"></div><script type="module" src="../../assets/js/admin/settings.js"></script></body></html>

@@ -1,0 +1,34 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Programmes | CAC Radio</title>
+<link rel="stylesheet" href="../../assets/css/admin.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"></head>
+<body><div class="admin-layout">
+<aside id="adminSidebar" class="sidebar">
+  <div class="sidebar-brand"><i class="fa-solid fa-radio"></i><span>CAC Radio</span></div>
+  <nav>
+    <a href="../dashboard.html">Dashboard</a>
+    <a href="live.html">Live Control</a>
+    <a href="programmes.html">Programmes</a>
+    <a href="announcements.html">Announcements</a>
+    <a href="prayers.html">Prayer Requests</a>
+    <a href="comments.html">Comments</a>
+    <a href="messages.html">Messages</a>
+    <a href="subscribers.html">Subscribers</a>
+    <a href="branches.html" data-hq-only>Branches</a>
+    <a href="users.html" data-hq-only>Users</a>
+    <a href="settings.html" data-hq-only>Settings</a>
+  </nav>
+</aside>
+<div class="admin-main">
+<header class="topbar">
+  <button id="sidebarToggle" class="icon-btn"><i class="fa-solid fa-bars"></i></button>
+  <div class="top-actions">
+    <button data-theme-toggle class="icon-btn"><i data-theme-icon class="fa-solid fa-moon"></i></button>
+    <div class="admin-id"><strong id="adminName">Administrator</strong><small id="adminRole">admin</small></div>
+    <button id="logoutButton" class="btn danger">Logout</button>
+  </div>
+</header>
+<main class="admin-content">
+<div class="page-head"><div><span class="eyebrow">CAC Radio Admin</span><h1>Programmes</h1></div></div><div class="toolbar"><input id="search" placeholder="Search programmes..."><button id="addButton" class="btn primary">Add New</button></div>
+<div class="table-wrap"><table><thead><tr><th>Title</th><th>Description</th><th>Day</th><th>Start Time</th><th>End Time</th><th>Status</th><th>Actions</th></tr></thead><tbody id="dataBody"><tr><td colspan="7">Loading...</td></tr></tbody></table></div>
+<div id="itemModal" class="modal"><div class="modal-card"><div class="modal-head"><h2>Programmes</h2><button data-close-modal>×</button></div>
+<form id="itemForm"><label>Title<input name="title"></label><label>Description<textarea name="description" rows="4"></textarea></label><label>Day<input name="day"></label><label>Start Time<input name="startTime"></label><label>End Time<input name="endTime"></label><label>Status<select name="status"><option value="active">Active</option><option value="pending">Pending</option><option value="published">Published</option><option value="approved">Approved</option><option value="unread">Unread</option></select></label><div class="modal-actions"><button type="button" data-close-modal class="btn ghost">Cancel</button><button class="btn primary">Save</button></div></form></div></div>
+</main></div></div><div id="toastContainer" class="toast-container"></div><script type="module" src="../../assets/js/admin/programmes.js"></script></body></html>
