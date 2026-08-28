@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Branch | CAC Agbara Aanu Sioni Radio</title>
+  <link rel="stylesheet" href="assets/css/site.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="container header-inner">
+    <a class="brand" href="index.html">
+      <span class="brand-icon"><i class="fa-solid fa-radio"></i></span>
+      <span><strong>CAC Agbara Aanu Sioni</strong><small>Radio</small></span>
+    </a>
+    <div class="header-actions">
+      <a class="btn ghost" href="index.html#branches">All Branches</a>
+      <button data-theme-toggle class="icon-btn" aria-label="Toggle theme"><i data-theme-icon class="fa-solid fa-moon"></i></button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="branch-hero">
+    <div class="container">
+      <span class="eyebrow">CAC Radio Branch</span>
+      <h1 id="branchName">Loading branch...</h1>
+      <p id="branchLocation"></p>
+      <p id="branchStatus"></p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="branch-player-card">
+        <div class="branch-player-art"><i class="fa-solid fa-tower-broadcast"></i></div>
+        <div>
+          <span id="branchLiveIndicator" class="live-badge">CHECKING</span>
+          <h2 id="branchLiveTitle">Checking live status...</h2>
+          <p id="branchPresenter">Please wait</p>
+          <audio id="branchAudio" preload="none"></audio>
+          <div class="player-controls">
+            <button id="branchPlayButton" class="round-btn" disabled><i id="branchPlayIcon" class="fa-solid fa-play"></i></button>
+            <input id="branchVolume" type="range" min="0" max="1" step=".1" value=".8" aria-label="Volume">
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section soft">
+    <div class="container branch-network-info">
+      <span class="eyebrow">CAC Radio Network</span>
+      <h2>Independent branch live broadcast</h2>
+      <p>When this branch starts a live programme, listeners can join directly here. Headquarters can also connect this branch to the main CAC Radio output.</p>
+      <a href="index.html#live" class="btn primary">Listen to Main Radio</a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="copyright">
+    © <span id="branchYear"></span> CAC Agbara Aanu Sioni Radio<br>
+    <span>Created and designed by <a href="https://bgdigitalventures.netlify.app" target="_blank" rel="noopener">BG Digital Ventures</a></span>
+  </div>
+</footer>
+
+<div id="toastContainer" class="toast-container"></div>
+<script type="module" src="assets/js/public/branch.js"></script>
+</body>
+</html>

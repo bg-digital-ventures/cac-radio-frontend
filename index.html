@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CAC Agbara Aanu Sioni Radio</title>
+<meta name="description" content="CAC Agbara Aanu Sioni Radio - live worship, prayer, programmes and branch broadcasts.">
+<link rel="stylesheet" href="assets/css/site.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="container header-inner">
+    <a class="brand" href="#home">
+      <img id="site"
+      <span><strong>CAC Ori Oke Agbara Aanu Sioni</strong><small>Radio</small></span>
+    </a>
+    <nav id="mainNav">
+      <a href="#home">Home</a><a href="#live">Live</a><a href="#programmes">Programmes</a>
+      <a href="#announcements">Announcements</a><a href="#prayer">Prayer</a>
+      <a href="#branches">Branches</a><a href="#contact">Contact</a>
+    </nav>
+    <div class="header-actions">
+      <button data-theme-toggle class="icon-btn" aria-label="Toggle theme"><i data-theme-icon class="fa-solid fa-moon"></i></button>
+      <button id="menuToggle" class="icon-btn mobile"><i class="fa-solid fa-bars"></i></button>
+    </div>
+  </div>
+</header>
+
+<main>
+<section id="home" class="hero">
+  <div class="container hero-grid">
+    <div>
+      <span class="eyebrow">* One ministry * many branches * Join us anywhere </span>
+      <h1>Worship,listen & pray with us — <em>anywhere in the world</em></h1>
+      <p>Listen to Headquarters or connected branch broadcasts, follow programmes, and stay connected to CAC Agbara Aanu Sioni Radio.</p>
+      <div class="actions">
+        <a href="#live" class="btn primary"><i class="fa-solid fa-play"></i> Listen Live</a>
+        <a href="#programmes" class="btn ghost">View Programmes</a>
+      </div>
+    </div>
+    <div class="hero-panel">
+      <span id="liveBadge" class="live-badge">OFFLINE</span>
+      <div class="radio-orb"><i class="fa-solid fa-tower-broadcast"></i></div>
+      <h3 id="nowPlaying">CAC Ori Oke Agbara Aanu Sioni Radio</h3>
+      <p id="liveBranch">Waiting for live broadcast</p>
+    </div>
+  </div>
+</section>
+
+<section id="live" class="section">
+  <div class="container">
+    <div class="section-title"><span class="eyebrow">Live Radio</span><h2>Listen to the current broadcast</h2></div>
+    <div class="player-card">
+      <div class="player-art"><i class="fa-solid fa-radio"></i></div>
+      <div class="player-info">
+        <h3 id="playerTitle">CAC Agbara Aanu Sioni Radio</h3>
+        <p id="playerStatus">Ready</p>
+        <audio id="radioAudio" preload="none"></audio>
+        <div class="player-controls">
+          <button id="playButton" class="round-btn"><i id="playIcon" class="fa-solid fa-play"></i></button>
+          <input id="volume" type="range" min="0" max="1" step=".1" value=".8">
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="programmes" class="section soft"><div class="container"><div class="section-title"><span class="eyebrow">Schedule</span><h2>Programmes</h2></div><div id="programmeGrid" class="grid"></div></div></section>
+<section id="announcements" class="section"><div class="container"><div class="section-title"><span class="eyebrow">Updates</span><h2>Announcements</h2></div><div id="announcementGrid" class="grid"></div></div></section>
+
+<section id="prayer" class="section soft">
+  <div class="container split">
+    <div><span class="eyebrow">Prayer</span><h2>Send a prayer request</h2><p>Share your request privately or anonymously. The prayer team will receive it in the dashboard.</p></div>
+    <form id="prayerForm" class="form-card">
+      <div class="form-grid">
+        <label>Name<input name="fullName" required></label>
+        <label>Phone<input name="phone"></label>
+        <label>Email<input name="email" type="email"></label>
+        <label>Branch<select id="prayerBranch" name="branchId"></select></label>
+      </div>
+      <label>Prayer Request<textarea name="prayerRequest" rows="5" required></textarea></label>
+      <div class="check-row">
+        <label><input type="checkbox" name="isAnonymous"> Anonymous</label>
+        <label><input type="checkbox" name="isPrivate" checked> Keep private</label>
+      </div>
+      <button class="btn primary">Submit Prayer Request</button>
+    </form>
+  </div>
+</section>
+
+<section id="branches" class="section"><div class="container"><div class="section-title"><span class="eyebrow">Branches</span><h2>Our connected branches</h2></div><div id="branchGrid" class="grid"></div></div></section>
+
+<section class="section soft">
+  <div class="container split">
+    <div><span class="eyebrow">Community</span><h2>Leave a comment</h2><p>Approved comments can be displayed publicly.</p></div>
+    <form id="commentForm" class="form-card">
+      <label>Name<input name="fullName" required></label>
+      <label>Email<input name="email" type="email"></label>
+      <label>Comment<textarea name="message" rows="4" required></textarea></label>
+      <button class="btn primary">Submit Comment</button>
+    </form>
+  </div>
+</section>
+
+<section id="contact" class="section">
+  <div class="container split">
+    <div>
+      <span class="eyebrow">Contact</span><h2>Get in touch</h2>
+      <p><i class="fa-solid fa-phone"></i> <span id="contactPhone">—</span></p>
+      <p><i class="fa-solid fa-envelope"></i> <span id="contactEmail">—</span></p>
+      <p><i class="fa-solid fa-location-dot"></i> <span id="contactAddress">—</span></p>
+    </div>
+    <form id="contactForm" class="form-card">
+      <label>Name<input name="fullName" required></label>
+      <label>Email<input name="email" type="email" required></label>
+      <label>Phone<input name="phone"></label>
+      <label>Subject<input name="subject" required></label>
+      <label>Message<textarea name="message" rows="5" required></textarea></label>
+      <button class="btn primary">Send Message</button>
+    </form>
+  </div>
+</section>
+
+<section class="newsletter">
+  <div class="container newsletter-inner">
+    <div><h2>Stay connected</h2><p>Receive ministry updates and programme announcements.</p></div>
+    <form id="subscribeForm"><input name="email" type="email" placeholder="Email address" required><button class="btn gold">Subscribe</button></form>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="container footer-grid">
+    <div><h3>CAC Agbara Aanu Sioni Radio</h3><p>One ministry, many branches, one voice.</p></div>
+    <div><h4>Quick Links</h4><a href="#live">Live Radio</a><a href="#programmes">Programmes</a><a href="#prayer">Prayer Request</a></div>
+    <div><h4>Administration</h4><a href="admin/login.html">Admin Login</a></div>
+  </div>
+  <div class="copyright">© <span id="currentYear"></span> CAC Agbara Aanu Sioni Radio<br><span>Created and designed by <a href="https://bgdigitalventures.netlify.app" target="_blank" rel="noopener">BG Digital Ventures</a></span></div>
+</footer>
+<div id="toastContainer" class="toast-container"></div>
+<script type="module" src="assets/js/public/app.js"></script>
+</body>
+</html>

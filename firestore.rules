@@ -1,0 +1,61 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn(){ return request.auth != null; }
+    function me(){ return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
+    function role(){ return signedIn() ? me().role : null; }
+    function isHQ(){ return role() == 'hq_admin'; }
+    function isBranchAdmin(){ return role() == 'branch_admin'; }
+    function isModerator(){ return role() == 'moderator'; }
+    function myBranch(){ return signedIn() ? me().branchId : null; }
+    function admin(){ return isHQ() || isBranchAdmin() || isModerator(); }
+
+    match /settings/{id} { allow read: if true; allow write: if isHQ(); }
+    match /branches/{id} { allow read: if true; allow write: if isHQ(); }
+
+    match /programmes/{id} {
+      allow read: if true;
+      allow create: if isHQ() || (isBranchAdmin() && request.resource.data.branchId == myBranch());
+      allow update, delete: if isHQ() || (isBranchAdmin() && resource.data.branchId == myBranch());
+    }
+    match /announcements/{id} {
+      allow read: if true;
+      allow create: if isHQ() || (isBranchAdmin() && request.resource.data.branchId == myBranch());
+      allow update, delete: if isHQ() || (isBranchAdmin() && resource.data.branchId == myBranch());
+    }
+    match /broadcasts/{id} {
+      allow read: if true;
+      allow create: if isHQ() || (isBranchAdmin() && request.resource.data.branchId == myBranch());
+      allow update, delete: if isHQ() || (isBranchAdmin() && resource.data.branchId == myBranch());
+    }
+    match /prayerRequests/{id} {
+      allow create: if true;
+      allow read, update, delete: if isHQ() || isModerator() || (isBranchAdmin() && resource.data.branchId == myBranch());
+    }
+    match /comments/{id} {
+      allow read: if resource.data.status == 'approved' || admin();
+      allow create: if request.resource.data.status == 'pending';
+      allow update, delete: if admin();
+    }
+    match /messages/{id} {
+      allow create: if true;
+      allow read, update, delete: if admin();
+    }
+    match /subscribers/{id} {
+      allow create: if true;
+      allow read, update, delete: if admin();
+    }
+    match /notifications/{id} {
+      allow read: if admin();
+      allow write: if isHQ();
+    }
+    match /users/{uid} {
+      allow read: if signedIn();
+      allow write: if isHQ();
+    }
+    match /auditLogs/{id} {
+      allow read: if isHQ();
+      allow write: if false;
+    }
+  }
+}
