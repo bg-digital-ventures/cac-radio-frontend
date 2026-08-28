@@ -1,0 +1,41 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dashboard | CAC Radio</title>
+<link rel="stylesheet" href="../assets/css/admin.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"></head>
+<body><div class="admin-layout">
+<aside id="adminSidebar" class="sidebar">
+  <div class="sidebar-brand"><i class="fa-solid fa-radio"></i><span>CAC Radio</span></div>
+  <nav>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="pages/live.html">Live Control</a>
+    <a href="pages/programmes.html">Programmes</a>
+    <a href="pages/announcements.html">Announcements</a>
+    <a href="pages/prayers.html">Prayer Requests</a>
+    <a href="pages/comments.html">Comments</a>
+    <a href="pages/messages.html">Messages</a>
+    <a href="pages/subscribers.html">Subscribers</a>
+    <a href="pages/branches.html" data-hq-only>Branches</a>
+    <a href="pages/users.html" data-hq-only>Users</a>
+    <a href="pages/settings.html" data-hq-only>Settings</a>
+  </nav>
+</aside>
+<div class="admin-main">
+<header class="topbar">
+  <button id="sidebarToggle" class="icon-btn"><i class="fa-solid fa-bars"></i></button>
+  <div class="top-actions">
+    <button data-theme-toggle class="icon-btn"><i data-theme-icon class="fa-solid fa-moon"></i></button>
+    <div class="admin-id"><strong id="adminName">Administrator</strong><small id="adminRole">admin</small></div>
+    <button id="logoutButton" class="btn danger">Logout</button>
+  </div>
+</header>
+<main class="admin-content">
+<div class="page-head"><div><span class="eyebrow">Overview</span><h1>Dashboard</h1><p>Headquarters and branch radio administration.</p></div><a href="pages/live.html" class="btn primary">Open Live Control</a></div>
+<section class="stats">
+<article><span>Branches</span><strong id="stat-branches">0</strong></article>
+<article><span>Programmes</span><strong id="stat-programmes">0</strong></article>
+<article><span>Broadcasts</span><strong id="stat-broadcasts">0</strong></article>
+<article><span>Prayer Requests</span><strong id="stat-prayers">0</strong></article>
+<article><span>Comments</span><strong id="stat-comments">0</strong></article>
+<article><span>Messages</span><strong id="stat-messages">0</strong></article>
+<article><span>Subscribers</span><strong id="stat-subscribers">0</strong></article>
+<article><span>Users</span><strong id="stat-users">0</strong></article>
+</section></main></div></div>
+<div id="toastContainer" class="toast-container"></div><script type="module" src="../assets/js/admin/dashboard.js"></script></body></html>
