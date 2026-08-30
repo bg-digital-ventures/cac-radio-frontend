@@ -52,18 +52,31 @@
   <div class="container">
     <div class="section-title"><span class="eyebrow">Live Radio</span><h2>Listen to the current broadcast</h2></div>
     <div class="player-card">
-      <div class="player-art"><i class="fa-solid fa-radio"></i></div>
-      <div class="player-info">
-        <h3 id="playerTitle">CAC Agbara Aanu Sioni Radio</h3>
-        <p id="playerStatus">Ready</p>
-        <audio id="radioAudio" preload="none"></audio>
-        <div class="player-controls">
-          <button id="playButton" class="round-btn"><i id="playIcon" class="fa-solid fa-play"></i></button>
-          <input id="volume" type="range" min="0" max="1" step=".1" value=".8">
-        </div>
-      </div>
-    </div>
+  <div class="player-art">
+    <i class="fa-solid fa-radio"></i>
   </div>
+
+  <div class="player-info">
+    <h3 id="playerTitle">CAC Agbara Aanu Sioni Radio</h3>
+    <p id="playerStatus">Live Radio</p>
+
+    <div
+      data-type="newStreamPlayer"
+      data-publicToken="3eb78513-9bb3-4076-b4fc-666542c3deb1"
+      data-theme="dark"
+      data-color="e81e4d"
+      data-channelId=""
+      data-rendered="false"
+      class="cstrEmbed"
+    >
+      <a href="https://www.caster.fm">Shoutcast Hosting</a>
+      <a href="https://www.caster.fm">Stream Hosting</a>
+      <a href="https://www.caster.fm">Radio Server Hosting</a>
+    </div>
+
+    <script src="//cdn.cloud.caster.fm//widgets/embed.js"></script>
+  </div>
+</div>
 </section>
 
 <section id="programmes" class="section soft"><div class="container"><div class="section-title"><span class="eyebrow">Schedule</span><h2>Programmes</h2></div><div id="programmeGrid" class="grid"></div></div></section>
