@@ -4,74 +4,236 @@ import { getSettings } from "../services/settings.js";
 import { initializeTheme } from "../components/theme.js";
 import { toast } from "../components/toast.js";
 
+
+// ============================================================
+// INITIAL SETUP
+// ============================================================
+
 initializeTheme();
 
-document.getElementById("currentYear").textContent =
-  new Date().getFullYear();
+const currentYear = document.getElementById("currentYear");
 
-document.getElementById("menuToggle")?.addEventListener("click", () => {
-  document.getElementById("mainNav")?.classList.toggle("open");
-});
+if (currentYear) {
+  currentYear.textContent = new Date().getFullYear();
+}
 
-const esc = (v) =>
-  String(v ?? "").replace(
+document
+  .getElementById("menuToggle")
+  ?.addEventListener("click", () => {
+    document
+      .getElementById("mainNav")
+      ?.classList.toggle("open");
+  });
+
+
+// ============================================================
+// HTML ESCAPE HELPER
+// ============================================================
+
+const esc = (value) =>
+  String(value ?? "").replace(
     /[&<>"']/g,
-    (c) =>
+    (character) =>
       ({
         "&": "&amp;",
         "<": "&lt;",
         ">": "&gt;",
         '"': "&quot;",
         "'": "&#039;"
-      })[c]
+      })[character]
   );
 
 
-// =========================================================
+// ============================================================
 // SETTINGS
-// =========================================================
+// ============================================================
 
-const settings = await getSettings();
+try {
+  const settings = await getSettings();
 
-for (const [id, val] of [
-  ["contactPhone", settings.general?.contactPhone],
-  ["contactEmail", settings.general?.contactEmail],
-  ["contactAddress", settings.general?.address]
-]) {
-  const el = document.getElementById(id);
+  const contactFields = [
+    ["contactPhone", settings.general?.contactPhone],
+    ["contactEmail", settings.general?.contactEmail],
+    ["contactAddress", settings.general?.address]
+  ];
 
-  if (el) {
-    el.textContent = val || "—";
+  for (const [id, value] of contactFields) {
+    const element = document.getElementById(id);
+
+    if (element) {
+      element.textContent = value || "—";
+    }
   }
+
+} catch (error) {
+  console.error("Unable to load settings:", error);
 }
 
 
-// =========================================================
-// BRANCHES + BROADCASTS
-// =========================================================
+// ============================================================
+// LIVE BROADCAST DATA
+// ============================================================
 
 let branches = [];
 let broadcasts = [];
 
+
+// Find the currently public live broadcast.
+//
+// IMPORTANT:
+// We deliberately do NOT require:
+//     isMain === true
+//
+// A branch broadcast with:
+//     status: "live"
+//     isPublic: true
+//
+// is therefore allowed to appear as LIVE on the public website.
+
+function getCurrentLiveBroadcast() {
+  return broadcasts.find(
+    (broadcast) =>
+      broadcast.status === "live" &&
+      broadcast.isPublic !== false
+  ) || null;
+}
+
+
+// ============================================================
+// UPDATE MAIN LIVE STATUS
+// ============================================================
+
+function updateLiveDisplay() {
+  const liveBadge = document.getElementById("liveBadge");
+  const nowPlaying = document.getElementById("nowPlaying");
+  const liveBranch = document.getElementById("liveBranch");
+  const playerTitle = document.getElementById("playerTitle");
+  const playerStatus = document.getElementById("playerStatus");
+
+  const live = getCurrentLiveBroadcast();
+
+
+  // ----------------------------------------------------------
+  // LIVE
+  // ----------------------------------------------------------
+
+  if (live) {
+
+    const branchName =
+      live.branchName ||
+      "CAC Agbara Aanu Sioni Radio";
+
+    const title =
+      live.title ||
+      "Live Broadcast";
+
+
+    if (liveBadge) {
+      liveBadge.textContent =
+        `LIVE • ${branchName}`;
+
+      liveBadge.classList.add("on");
+    }
+
+
+    if (nowPlaying) {
+      nowPlaying.textContent = title;
+    }
+
+
+    if (liveBranch) {
+      liveBranch.textContent = branchName;
+    }
+
+
+    if (playerTitle) {
+      playerTitle.textContent = title;
+    }
+
+
+    if (playerStatus) {
+      playerStatus.textContent = "LIVE";
+    }
+
+
+    return;
+  }
+
+
+  // ----------------------------------------------------------
+  // OFFLINE
+  // ----------------------------------------------------------
+
+  if (liveBadge) {
+    liveBadge.textContent = "OFFLINE";
+    liveBadge.classList.remove("on");
+  }
+
+
+  if (nowPlaying) {
+    nowPlaying.textContent =
+      "CAC Agbara Aanu Sioni Radio";
+  }
+
+
+  if (liveBranch) {
+    liveBranch.textContent =
+      "Waiting for live broadcast";
+  }
+
+
+  if (playerTitle) {
+    playerTitle.textContent =
+      "CAC Agbara Aanu Sioni Radio";
+  }
+
+
+  if (playerStatus) {
+    playerStatus.textContent =
+      "Waiting for live broadcast";
+  }
+}
+
+
+// ============================================================
+// RENDER BRANCHES
+// ============================================================
+
 function renderBranches() {
-  const branchGrid = document.getElementById("branchGrid");
-  const prayerBranch = document.getElementById("prayerBranch");
+  const branchGrid =
+    document.getElementById("branchGrid");
 
-  if (!branchGrid || !prayerBranch) return;
+  const prayerBranch =
+    document.getElementById("prayerBranch");
 
-  const active = branches.filter(
-    (x) => !x.status || x.status === "active"
+
+  if (!branchGrid) {
+    return;
+  }
+
+
+  const activeBranches = branches.filter(
+    (branch) =>
+      !branch.status ||
+      branch.status === "active"
   );
 
-  branchGrid.innerHTML = active.length
-    ? active
-        .map((x) => {
+
+  // ----------------------------------------------------------
+  // BRANCH CARDS
+  // ----------------------------------------------------------
+
+  branchGrid.innerHTML = activeBranches.length
+    ? activeBranches
+        .map((branch) => {
+
           const live = broadcasts.find(
-            (b) =>
-              b.branchId === x.id &&
-              b.status === "live" &&
-              b.isPublic !== false
+            (broadcast) =>
+              broadcast.branchId === branch.id &&
+              broadcast.status === "live" &&
+              broadcast.isPublic !== false
           );
+
 
           return `
             <article class="card branch-card">
@@ -80,7 +242,7 @@ function renderBranches() {
 
                 <span class="tag">
                   ${
-                    x.type === "headquarters"
+                    branch.type === "headquarters"
                       ? "Headquarters"
                       : "Branch"
                   }
@@ -88,20 +250,37 @@ function renderBranches() {
 
                 ${
                   live
-                    ? '<span class="branch-live-badge">LIVE</span>'
-                    : '<span class="branch-offline-badge">OFFLINE</span>'
+                    ? `
+                      <span class="branch-live-badge">
+                        LIVE
+                      </span>
+                    `
+                    : `
+                      <span class="branch-offline-badge">
+                        OFFLINE
+                      </span>
+                    `
                 }
 
               </div>
 
-              <h3>${esc(x.branchName)}</h3>
 
-              <p>${esc(x.address || "")}</p>
+              <h3>
+                ${esc(branch.branchName)}
+              </h3>
+
+
+              <p>
+                ${esc(branch.address || "")}
+              </p>
+
 
               <small>
-                ${esc(x.state || "")}
-                ${esc(x.country || "")}
+                ${esc(branch.state || "")}
+                ${branch.state && branch.country ? " " : ""}
+                ${esc(branch.country || "")}
               </small>
+
 
               ${
                 live
@@ -109,27 +288,46 @@ function renderBranches() {
                     <div class="branch-live-summary">
 
                       <strong>
-                        ${esc(live.title || "Live Broadcast")}
+                        ${esc(
+                          live.title ||
+                          "Live Broadcast"
+                        )}
                       </strong>
 
-                      <span>
-                        ${esc(live.presenter || "")}
-                      </span>
+                      ${
+                        live.presenter
+                          ? `
+                            <span>
+                              ${esc(
+                                live.presenter
+                              )}
+                            </span>
+                          `
+                          : ""
+                      }
 
                     </div>
 
+
                     <a
                       class="btn primary branch-join-btn"
-                      href="branch.html?id=${encodeURIComponent(x.id)}"
+                      href="branch.html?id=${encodeURIComponent(
+                        branch.id
+                      )}"
                     >
+
                       <i class="fa-solid fa-headphones"></i>
+
                       Join Live
+
                     </a>
                   `
                   : `
                     <a
                       class="btn ghost branch-join-btn"
-                      href="branch.html?id=${encodeURIComponent(x.id)}"
+                      href="branch.html?id=${encodeURIComponent(
+                        branch.id
+                      )}"
                     >
                       View Branch
                     </a>
@@ -140,29 +338,44 @@ function renderBranches() {
           `;
         })
         .join("")
-    : `<div class="empty">No branches added yet.</div>`;
+    : `
+      <div class="empty">
+        No branches added yet.
+      </div>
+    `;
 
-  prayerBranch.innerHTML =
-    '<option value="">Select branch</option>' +
-    active
-      .map(
-        (x) =>
-          `<option value="${esc(x.id)}">${esc(
-            x.branchName
-          )}</option>`
-      )
-      .join("");
+
+  // ----------------------------------------------------------
+  // PRAYER BRANCH SELECT
+  // ----------------------------------------------------------
+
+  if (prayerBranch) {
+
+    prayerBranch.innerHTML =
+      `<option value="">Select branch</option>` +
+      activeBranches
+        .map(
+          (branch) => `
+            <option value="${esc(branch.id)}">
+              ${esc(branch.branchName)}
+            </option>
+          `
+        )
+        .join("");
+  }
 }
 
 
-// =========================================================
-// BRANCH LISTENER
-// =========================================================
+// ============================================================
+// FIRESTORE: BRANCHES
+// ============================================================
 
 listen(
   COLLECTIONS.BRANCHES,
   (items) => {
-    branches = items;
+
+    branches = items || [];
+
     renderBranches();
   },
   "branchName",
@@ -170,204 +383,213 @@ listen(
 );
 
 
-// =========================================================
-// BROADCAST LISTENER
-// =========================================================
+// ============================================================
+// FIRESTORE: BROADCASTS
+// ============================================================
 
-listen(COLLECTIONS.BROADCASTS, (items) => {
-  broadcasts = items;
+listen(
+  COLLECTIONS.BROADCASTS,
+  (items) => {
 
-  renderBranches();
+    broadcasts = items || [];
 
-  const live = items.find(
-    (x) =>
-      x.status === "live" &&
-      x.isPublic !== false &&
-      (x.isMain === true || x.branchId === "hq")
-  );
+    renderBranches();
 
-  const badge = document.getElementById("liveBadge");
-  const nowPlaying = document.getElementById("nowPlaying");
-  const liveBranch = document.getElementById("liveBranch");
-  const playerStatus = document.getElementById("playerStatus");
-  const playerTitle = document.getElementById("playerTitle");
-
-  if (live) {
-    if (badge) {
-      badge.textContent =
-        `LIVE • ${live.branchName || "Headquarters"}`;
-
-      badge.classList.add("on");
-    }
-
-    if (nowPlaying) {
-      nowPlaying.textContent =
-        live.title || "Live Broadcast";
-    }
-
-    if (liveBranch) {
-      liveBranch.textContent =
-        live.branchName || "Headquarters";
-    }
-
-    if (playerStatus) {
-      playerStatus.textContent = "LIVE";
-    }
-
-    if (playerTitle) {
-      playerTitle.textContent =
-        live.title || "Live Broadcast";
-    }
-
-  } else {
-
-    if (badge) {
-      badge.textContent = "OFFLINE";
-      badge.classList.remove("on");
-    }
-
-    if (nowPlaying) {
-      nowPlaying.textContent =
-        "CAC Agbara Aanu Sioni Radio";
-    }
-
-    if (liveBranch) {
-      liveBranch.textContent =
-        "Waiting for live broadcast";
-    }
-
-    if (playerStatus) {
-      playerStatus.textContent = "Waiting for live broadcast";
-    }
-
-    if (playerTitle) {
-      playerTitle.textContent =
-        "CAC Agbara Aanu Sioni Radio";
-    }
+    updateLiveDisplay();
   }
-});
+);
 
 
-// =========================================================
+// ============================================================
 // PROGRAMMES
-// =========================================================
+// ============================================================
 
-listen(COLLECTIONS.PROGRAMMES, (items) => {
-  const programmeGrid =
-    document.getElementById("programmeGrid");
+listen(
+  COLLECTIONS.PROGRAMMES,
+  (items) => {
 
-  if (!programmeGrid) return;
+    const programmeGrid =
+      document.getElementById(
+        "programmeGrid"
+      );
 
-  const active = items
-    .filter((x) => !x.status || x.status === "active")
-    .slice(0, 6);
-
-  programmeGrid.innerHTML = active.length
-    ? active
-        .map(
-          (x) => `
-            <article class="card">
-
-              <span class="tag">
-                ${esc(x.day || "Programme")}
-              </span>
-
-              <h3>
-                ${esc(x.title || "Programme")}
-              </h3>
-
-              <p>
-                ${esc(x.description || "")}
-              </p>
-
-              <strong>
-                ${esc(x.startTime || "")}
-                ${
-                  x.endTime
-                    ? ` – ${esc(x.endTime)}`
-                    : ""
-                }
-              </strong>
-
-            </article>
-          `
-        )
-        .join("")
-    : `<div class="empty">No programmes yet.</div>`;
-});
+    if (!programmeGrid) {
+      return;
+    }
 
 
-// =========================================================
+    const activeProgrammes = (items || [])
+      .filter(
+        (item) =>
+          !item.status ||
+          item.status === "active"
+      )
+      .slice(0, 6);
+
+
+    programmeGrid.innerHTML =
+      activeProgrammes.length
+        ? activeProgrammes
+            .map(
+              (programme) => `
+                <article class="card">
+
+                  <span class="tag">
+                    ${esc(
+                      programme.day ||
+                      "Programme"
+                    )}
+                  </span>
+
+                  <h3>
+                    ${esc(
+                      programme.title ||
+                      "Programme"
+                    )}
+                  </h3>
+
+                  <p>
+                    ${esc(
+                      programme.description ||
+                      ""
+                    )}
+                  </p>
+
+                  <strong>
+                    ${esc(
+                      programme.startTime ||
+                      ""
+                    )}
+
+                    ${
+                      programme.endTime
+                        ? `
+                          – ${esc(
+                            programme.endTime
+                          )}
+                        `
+                        : ""
+                    }
+                  </strong>
+
+                </article>
+              `
+            )
+            .join("")
+        : `
+          <div class="empty">
+            No programmes yet.
+          </div>
+        `;
+  }
+);
+
+
+// ============================================================
 // ANNOUNCEMENTS
-// =========================================================
+// ============================================================
 
-listen(COLLECTIONS.ANNOUNCEMENTS, (items) => {
-  const announcementGrid =
-    document.getElementById("announcementGrid");
+listen(
+  COLLECTIONS.ANNOUNCEMENTS,
+  (items) => {
 
-  if (!announcementGrid) return;
+    const announcementGrid =
+      document.getElementById(
+        "announcementGrid"
+      );
 
-  const data = items
-    .filter(
-      (x) =>
-        x.status === "published" ||
-        !x.status
-    )
-    .slice(0, 6);
-
-  announcementGrid.innerHTML = data.length
-    ? data
-        .map(
-          (x) => `
-            <article class="card">
-
-              <span class="tag">
-                ${esc(x.category || "Announcement")}
-              </span>
-
-              <h3>
-                ${esc(x.title || "Announcement")}
-              </h3>
-
-              <p>
-                ${esc(x.message || "")}
-              </p>
-
-            </article>
-          `
-        )
-        .join("")
-    : `<div class="empty">No announcements yet.</div>`;
-});
+    if (!announcementGrid) {
+      return;
+    }
 
 
-// =========================================================
-// FORMS
-// =========================================================
+    const announcements = (items || [])
+      .filter(
+        (item) =>
+          item.status === "published" ||
+          !item.status
+      )
+      .slice(0, 6);
+
+
+    announcementGrid.innerHTML =
+      announcements.length
+        ? announcements
+            .map(
+              (announcement) => `
+                <article class="card">
+
+                  <span class="tag">
+                    ${esc(
+                      announcement.category ||
+                      "Announcement"
+                    )}
+                  </span>
+
+                  <h3>
+                    ${esc(
+                      announcement.title ||
+                      "Announcement"
+                    )}
+                  </h3>
+
+                  <p>
+                    ${esc(
+                      announcement.message ||
+                      ""
+                    )}
+                  </p>
+
+                </article>
+              `
+            )
+            .join("")
+        : `
+          <div class="empty">
+            No announcements yet.
+          </div>
+        `;
+  }
+);
+
+
+// ============================================================
+// PUBLIC FORMS
+// ============================================================
 
 const forms = [
+
   [
     "prayerForm",
     COLLECTIONS.PRAYER_REQUESTS,
 
-    (f) => ({
-      fullName: f.fullName.value.trim(),
-      phone: f.phone.value.trim(),
-      email: f.email.value.trim(),
+    (form) => ({
+      fullName:
+        form.fullName.value.trim(),
 
-      branchId: f.branchId.value,
+      phone:
+        form.phone.value.trim(),
+
+      email:
+        form.email.value.trim(),
+
+      branchId:
+        form.branchId.value,
 
       branchName:
-        f.branchId.selectedOptions[0]?.textContent || "",
+        form.branchId
+          .selectedOptions[0]
+          ?.textContent
+          ?.trim() || "",
 
       prayerRequest:
-        f.prayerRequest.value.trim(),
+        form.prayerRequest.value.trim(),
 
       isAnonymous:
-        f.isAnonymous.checked,
+        form.isAnonymous.checked,
 
       isPrivate:
-        f.isPrivate.checked,
+        form.isPrivate.checked,
 
       status: "pending"
     }),
@@ -375,43 +597,65 @@ const forms = [
     "Prayer request submitted."
   ],
 
+
   [
     "commentForm",
     COLLECTIONS.COMMENTS,
 
-    (f) => ({
-      fullName: f.fullName.value.trim(),
-      email: f.email.value.trim(),
-      message: f.message.value.trim(),
+    (form) => ({
+      fullName:
+        form.fullName.value.trim(),
+
+      email:
+        form.email.value.trim(),
+
+      message:
+        form.message.value.trim(),
+
       status: "pending"
     }),
 
     "Comment submitted for approval."
   ],
 
+
   [
     "contactForm",
     COLLECTIONS.MESSAGES,
 
-    (f) => ({
-      fullName: f.fullName.value.trim(),
-      email: f.email.value.trim(),
-      phone: f.phone.value.trim(),
-      subject: f.subject.value.trim(),
-      message: f.message.value.trim(),
+    (form) => ({
+      fullName:
+        form.fullName.value.trim(),
+
+      email:
+        form.email.value.trim(),
+
+      phone:
+        form.phone.value.trim(),
+
+      subject:
+        form.subject.value.trim(),
+
+      message:
+        form.message.value.trim(),
+
       status: "unread"
     }),
 
     "Message sent successfully."
   ],
 
+
   [
     "subscribeForm",
     COLLECTIONS.SUBSCRIBERS,
 
-    (f) => ({
-      email: f.email.value.trim(),
+    (form) => ({
+      email:
+        form.email.value.trim(),
+
       status: "active",
+
       source: "website"
     }),
 
@@ -420,34 +664,57 @@ const forms = [
 ];
 
 
-// =========================================================
+// ============================================================
 // FORM SUBMISSION
-// =========================================================
+// ============================================================
 
-for (const [id, collection, make, message] of forms) {
+for (
+  const [id, collection, makeData, successMessage]
+  of forms
+) {
+
   document
     .getElementById(id)
-    ?.addEventListener("submit", async (e) => {
-      e.preventDefault();
+    ?.addEventListener(
+      "submit",
+      async (event) => {
 
-      try {
-        await add(
-          collection,
-          make(e.currentTarget)
-        );
+        event.preventDefault();
 
-        e.currentTarget.reset();
+        const form =
+          event.currentTarget;
 
-        toast(message, "success");
 
-      } catch (err) {
+        try {
 
-        console.error(err);
+          await add(
+            collection,
+            makeData(form)
+          );
 
-        toast(
-          "Unable to submit. Please try again.",
-          "error"
-        );
+
+          form.reset();
+
+
+          toast(
+            successMessage,
+            "success"
+          );
+
+
+        } catch (error) {
+
+          console.error(
+            "Form submission error:",
+            error
+          );
+
+
+          toast(
+            "Unable to submit. Please try again.",
+            "error"
+          );
+        }
       }
-    });
+    );
 }
