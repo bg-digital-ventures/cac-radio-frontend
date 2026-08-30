@@ -36,7 +36,9 @@ document.getElementById("startLive").onclick=async()=>{
   const result=await liveApi.start({branchId,branchName,title,presenter,programmeId});
   broadcastId=await add(COLLECTIONS.BROADCASTS,{branchId,branchName,title,presenter,programmeId,status:"live",isPublic:true,streamUrl:result.publicStreamUrl||""});
   const wsBase=API_BASE.replace(/^http/,"ws");
-  socket=new WebSocket(`${wsBase}/ws/live/${encodeURIComponent(branchId)}?token=${encodeURIComponent(result.sessionToken)}`);
+  socket = new WebSocket(
+  `${wsBase}/ws/live/${encodeURIComponent(branchId)}?token=${encodeURIComponent(result.sessionToken)}&broadcastId=${encodeURIComponent(broadcastId)}`
+);
   await new Promise((resolve,reject)=>{socket.onopen=resolve;socket.onerror=reject;});
   const mime=MediaRecorder.isTypeSupported("audio/webm;codecs=opus")?"audio/webm;codecs=opus":"audio/webm";
   recorder=new MediaRecorder(stream,{mimeType:mime});
