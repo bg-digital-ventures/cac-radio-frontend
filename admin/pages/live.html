@@ -638,51 +638,47 @@
              LIVE STATUS
              ================================================= -->
 
-        <div class="live-status-card">
+       <div class="live-status-card">
 
-          <div class="live-status-top">
+  <div class="live-status-top">
+    <span id="liveState" class="state">OFFLINE</span>
 
-            <div class="live-status-left">
+    <div class="live-timer-wrap">
+      <span class="live-timer-label">CONNECTED TIME</span>
+      <strong id="liveTimer">00:00:00</strong>
+    </div>
+  </div>
 
-              <div class="live-status-icon">
-                <i class="fa-solid fa-microphone-lines"></i>
-              </div>
+  <h2 id="broadcastIdentity">
+    Broadcasting as...
+  </h2>
 
-              <div>
+  <p id="micState">
+    Microphone not selected
+  </p>
 
-                <span
-                  id="liveState"
-                  class="state"
-                >
-                  OFFLINE
-                </span>
+  <!-- AUDIO LEVEL -->
+  <div class="audio-monitor">
 
-                <h2 id="broadcastIdentity">
-                  Broadcasting as...
-                </h2>
+    <div class="audio-monitor-header">
+      <span>Microphone Level</span>
+      <span id="audioLevelText">0%</span>
+    </div>
 
-                <p id="micState">
-                  Microphone not connected
-                </p>
+    <div class="audio-meter">
+      <div id="audioMeterFill" class="audio-meter-fill"></div>
+    </div>
 
-              </div>
+    <div class="audio-meter-scale">
+      <span>LOW</span>
+      <span>GOOD</span>
+      <span>HIGH</span>
+      <span>CLIP</span>
+    </div>
 
-            </div>
+  </div>
 
-
-            <div class="live-timer">
-
-              <span class="live-timer-label">
-                Live Duration
-              </span>
-
-              <strong id="liveTimer">
-                00:00:00
-              </strong>
-
-            </div>
-
-          </div>
+</div>
 
 
           <!-- ===============================================
