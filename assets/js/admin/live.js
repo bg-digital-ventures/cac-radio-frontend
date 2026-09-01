@@ -42,8 +42,121 @@ document.getElementById(
 let stream = null;
 let recorder = null;
 let socket = null;
+
 let broadcastId = null;
 let liveSession = null;
+
+// ---------------------------------------------------------
+// IMPORTANT
+// ---------------------------------------------------------
+// These flags prevent WebSocket cleanup from accidentally
+// ending a broadcast when we intentionally close the socket.
+// ---------------------------------------------------------
+
+let stoppingManually = false;
+let startingLive = false;
+let endingLive = false;
+
+
+// =========================================================
+// UI HELPERS
+// =========================================================
+
+function setLiveUI(isLive) {
+
+  const liveState =
+    document.getElementById("liveState");
+
+  const startButton =
+    document.getElementById("startLive");
+
+  const stopButton =
+    document.getElementById("stopLive");
+
+  if (isLive) {
+
+    liveState.textContent = "LIVE";
+
+    liveState.classList.add("live");
+
+    startButton.disabled = true;
+
+    stopButton.disabled = false;
+
+  } else {
+
+    liveState.textContent = "OFFLINE";
+
+    liveState.classList.remove("live");
+
+    startButton.disabled = false;
+
+    stopButton.disabled = true;
+
+  }
+}
+
+
+function resetLiveState() {
+
+  broadcastId = null;
+  liveSession = null;
+  recorder = null;
+  socket = null;
+
+  stoppingManually = false;
+  startingLive = false;
+  endingLive = false;
+
+  setLiveUI(false);
+
+  const micState =
+    document.getElementById("micState");
+
+  if (micState) {
+
+    micState.textContent =
+      "Microphone not connected";
+
+  }
+}
+
+
+// =========================================================
+// FIRESTORE END BROADCAST
+// =========================================================
+
+async function endFirestoreBroadcast(id) {
+
+  if (!id) {
+    return;
+  }
+
+  try {
+
+    await update(
+      COLLECTIONS.BROADCASTS,
+      id,
+      {
+        status: "ended",
+        updatedAt: new Date()
+      }
+    );
+
+    console.log(
+      "Broadcast marked ended:",
+      id
+    );
+
+  } catch (error) {
+
+    console.error(
+      "Unable to mark broadcast ended:",
+      error
+    );
+
+  }
+}
 
 
 // =========================================================
@@ -164,11 +277,18 @@ document.getElementById(
   "startLive"
 ).onclick = async () => {
 
+  if (startingLive || endingLive) {
+    return;
+  }
+
+  startingLive = true;
+  stoppingManually = false;
+
   try {
 
-    // -----------------------------------------------------
+    // =====================================================
     // MICROPHONE
-    // -----------------------------------------------------
+    // =====================================================
 
     if (!stream) {
 
@@ -180,12 +300,13 @@ document.getElementById(
       document.getElementById(
         "micState"
       ).textContent = "Microphone ready";
+
     }
 
 
-    // -----------------------------------------------------
+    // =====================================================
     // BROADCAST DETAILS
-    // -----------------------------------------------------
+    // =====================================================
 
     const title =
       document
@@ -194,11 +315,13 @@ document.getElementById(
         .trim() ||
       "Live Broadcast";
 
+
     const presenter =
       document
         .getElementById("presenter")
         .value
         .trim();
+
 
     const programmeId =
       document
@@ -206,17 +329,28 @@ document.getElementById(
         .value;
 
 
-    // -----------------------------------------------------
+    // =====================================================
     // PREPARE BACKEND SESSION
-    // -----------------------------------------------------
+    // =====================================================
+
+    console.log(
+      "Preparing backend live session..."
+    );
+
 
     const result =
       await liveApi.start({
+
         branchId,
+
         branchName,
+
         title,
+
         presenter,
+
         programmeId
+
       });
 
 
@@ -226,33 +360,36 @@ document.getElementById(
         result?.message ||
         "Unable to prepare live session."
       );
+
     }
+
 
     liveSession = result;
 
 
-    // -----------------------------------------------------
-    // CREATE FIRESTORE BROADCAST BEFORE WEBSOCKET
-    // -----------------------------------------------------
-    //
-    // IMPORTANT:
-    // We create the Firestore document FIRST.
-    //
-    // Then we pass broadcastId to the backend through
-    // the WebSocket URL.
-    //
-    // This means the backend always knows which
-    // Firestore broadcast belongs to this live session.
-    //
+    console.log(
+      "Backend live session prepared:",
+      result
+    );
+
+
+    // =====================================================
+    // CREATE FIRESTORE BROADCAST
+    // =====================================================
 
     broadcastId =
       await add(
         COLLECTIONS.BROADCASTS,
         {
+
           branchId,
+
           branchName,
+
           title,
+
           presenter,
+
           programmeId,
 
           status: "live",
@@ -268,6 +405,7 @@ document.getElementById(
 
           updatedAt:
             new Date()
+
         }
       );
 
@@ -278,12 +416,15 @@ document.getElementById(
     );
 
 
-    // -----------------------------------------------------
+    // =====================================================
     // WEBSOCKET URL
-    // -----------------------------------------------------
+    // =====================================================
 
     const wsBase =
-      API_BASE.replace(/^http/, "ws");
+      API_BASE.replace(
+        /^http/,
+        "ws"
+      );
 
 
     const wsUrl =
@@ -298,19 +439,31 @@ document.getElementById(
     );
 
 
-    // -----------------------------------------------------
-    // CONNECT WEBSOCKET
-    // -----------------------------------------------------
+    // =====================================================
+    // CREATE WEBSOCKET
+    // =====================================================
 
     socket =
       new WebSocket(wsUrl);
 
 
+    // -----------------------------------------------------
+    // Wait for WebSocket connection
+    // -----------------------------------------------------
+
     await new Promise(
       (resolve, reject) => {
 
+        let settled = false;
+
         const timeout =
           setTimeout(() => {
+
+            if (settled) {
+              return;
+            }
+
+            settled = true;
 
             reject(
               new Error(
@@ -322,6 +475,12 @@ document.getElementById(
 
 
         socket.onopen = () => {
+
+          if (settled) {
+            return;
+          }
+
+          settled = true;
 
           clearTimeout(timeout);
 
@@ -335,6 +494,12 @@ document.getElementById(
 
 
         socket.onerror = () => {
+
+          if (settled) {
+            return;
+          }
+
+          settled = true;
 
           clearTimeout(timeout);
 
@@ -350,7 +515,7 @@ document.getElementById(
         socket.onclose = event => {
 
           console.warn(
-            "Live WebSocket closed:",
+            "WebSocket closed during connection:",
             event.code,
             event.reason
           );
@@ -361,9 +526,9 @@ document.getElementById(
     );
 
 
-    // -----------------------------------------------------
+    // =====================================================
     // MEDIA RECORDER
-    // -----------------------------------------------------
+    // =====================================================
 
     const mime =
       MediaRecorder.isTypeSupported(
@@ -382,22 +547,42 @@ document.getElementById(
       );
 
 
+    // =====================================================
+    // SEND AUDIO TO BACKEND
+    // =====================================================
+
     recorder.ondataavailable = event => {
 
       if (
-        event.data.size &&
+        event.data &&
+        event.data.size > 0 &&
         socket &&
         socket.readyState === WebSocket.OPEN
       ) {
 
-        socket.send(
-          event.data
-        );
+        try {
+
+          socket.send(
+            event.data
+          );
+
+        } catch (error) {
+
+          console.error(
+            "Unable to send audio:",
+            error
+          );
+
+        }
 
       }
 
     };
 
+
+    // =====================================================
+    // MEDIA RECORDER ERROR
+    // =====================================================
 
     recorder.onerror = event => {
 
@@ -409,21 +594,54 @@ document.getElementById(
     };
 
 
-    // -----------------------------------------------------
-    // HANDLE WEBSOCKET CLOSE
-    // -----------------------------------------------------
+    // =====================================================
+    // WEBSOCKET CLOSE
+    // =====================================================
 
     socket.onclose = async event => {
 
       console.warn(
-        "Live connection closed.",
+        "Live WebSocket closed:",
         event.code,
         event.reason
       );
 
 
-      // If recorder is still running,
-      // stop it.
+      // ---------------------------------------------------
+      // IMPORTANT:
+      //
+      // A WebSocket close does NOT automatically mean that
+      // the user pressed Stop.
+      //
+      // We only mark Firestore ended when the disconnect
+      // really represents the end of the live session.
+      // ---------------------------------------------------
+
+      if (stoppingManually) {
+
+        console.log(
+          "WebSocket closed because live was stopped manually."
+        );
+
+        return;
+
+      }
+
+
+      if (endingLive) {
+
+        console.log(
+          "WebSocket closed while live session was ending."
+        );
+
+        return;
+
+      }
+
+
+      // ---------------------------------------------------
+      // Stop recorder
+      // ---------------------------------------------------
 
       try {
 
@@ -436,94 +654,101 @@ document.getElementById(
 
         }
 
-      } catch (_) {}
+      } catch (error) {
 
-
-      // Only update Firestore if this was
-      // an unexpected disconnect.
-
-      if (broadcastId) {
-
-        try {
-
-          await update(
-            COLLECTIONS.BROADCASTS,
-            broadcastId,
-            {
-              status: "ended",
-              updatedAt: new Date()
-            }
-          );
-
-          console.log(
-            "Broadcast marked ended after WebSocket close."
-          );
-
-        } catch (error) {
-
-          console.error(
-            "Unable to update broadcast after disconnect:",
-            error
-          );
-
-        }
+        console.warn(
+          "Unable to stop recorder after socket close:",
+          error
+        );
 
       }
 
 
+      // ---------------------------------------------------
+      // IMPORTANT:
+      //
+      // The backend is responsible for detecting the
+      // FFmpeg failure and marking the broadcast ended.
+      //
+      // We also update Firestore here as a safety fallback.
+      // ---------------------------------------------------
+
+      const endedBroadcastId =
+        broadcastId;
+
+
+      await endFirestoreBroadcast(
+        endedBroadcastId
+      );
+
+
+      // ---------------------------------------------------
+      // Stop microphone
+      // ---------------------------------------------------
+
+      if (stream) {
+
+        try {
+
+          stream
+            .getTracks()
+            .forEach(
+              track => track.stop()
+            );
+
+        } catch (_) {}
+
+        stream = null;
+
+      }
+
+
+      // ---------------------------------------------------
       // Reset UI
+      // ---------------------------------------------------
+
+      broadcastId = null;
+
+      liveSession = null;
+
+      recorder = null;
+
+      socket = null;
+
+      setLiveUI(false);
 
       document.getElementById(
-        "liveState"
-      ).textContent = "OFFLINE";
+        "micState"
+      ).textContent =
+        "Microphone not connected";
 
-      document
-        .getElementById("liveState")
-        .classList.remove("live");
 
-      document.getElementById(
-        "startLive"
-      ).disabled = false;
-
-      document.getElementById(
-        "stopLive"
-      ).disabled = true;
+      toast(
+        "Live connection ended.",
+        "error"
+      );
 
     };
 
 
-    // -----------------------------------------------------
+    // =====================================================
     // START RECORDING
-    // -----------------------------------------------------
+    // =====================================================
 
     recorder.start(
       1000
     );
 
 
-    // -----------------------------------------------------
+    // =====================================================
     // UI
-    // -----------------------------------------------------
+    // =====================================================
 
-    document.getElementById(
-      "liveState"
-    ).textContent = "LIVE";
-
-    document
-      .getElementById("liveState")
-      .classList.add("live");
-
-    document.getElementById(
-      "startLive"
-    ).disabled = true;
-
-    document.getElementById(
-      "stopLive"
-    ).disabled = false;
+    setLiveUI(true);
 
 
     console.log(
-      "CAC Radio live session:",
+      "CAC Radio live session started:",
       result
     );
 
@@ -567,9 +792,9 @@ document.getElementById(
     );
 
 
-    // -----------------------------------------------------
-    // STOP RECORDER
-    // -----------------------------------------------------
+    // =====================================================
+    // CLEAN RECORDER
+    // =====================================================
 
     try {
 
@@ -585,9 +810,14 @@ document.getElementById(
     } catch (_) {}
 
 
-    // -----------------------------------------------------
+    recorder = null;
+
+
+    // =====================================================
     // CLOSE SOCKET
-    // -----------------------------------------------------
+    // =====================================================
+
+    stoppingManually = true;
 
     try {
 
@@ -600,15 +830,21 @@ document.getElementById(
     } catch (_) {}
 
 
-    // -----------------------------------------------------
+    socket = null;
+
+
+    // =====================================================
     // CLEAN BACKEND SESSION
-    // -----------------------------------------------------
+    // =====================================================
 
     try {
 
       await liveApi.stop({
+
         branchId,
+
         broadcastId
+
       });
 
     } catch (cleanupError) {
@@ -621,37 +857,45 @@ document.getElementById(
     }
 
 
-    // -----------------------------------------------------
-    // CLEAN FIRESTORE BROADCAST
-    // -----------------------------------------------------
+    // =====================================================
+    // CLEAN FIRESTORE
+    // =====================================================
 
     if (broadcastId) {
 
-      try {
-
-        await update(
-          COLLECTIONS.BROADCASTS,
-          broadcastId,
-          {
-            status: "ended",
-            updatedAt: new Date()
-          }
-        );
-
-      } catch (firestoreError) {
-
-        console.error(
-          "Firestore cleanup failed:",
-          firestoreError
-        );
-
-      }
+      await endFirestoreBroadcast(
+        broadcastId
+      );
 
     }
 
 
-    broadcastId = null;
-    liveSession = null;
+    // =====================================================
+    // STOP MICROPHONE
+    // =====================================================
+
+    if (stream) {
+
+      try {
+
+        stream
+          .getTracks()
+          .forEach(
+            track => track.stop()
+          );
+
+      } catch (_) {}
+
+      stream = null;
+
+    }
+
+
+    // =====================================================
+    // RESET
+    // =====================================================
+
+    resetLiveState();
 
 
     toast(
@@ -659,6 +903,10 @@ document.getElementById(
       "Unable to start live.",
       "error"
     );
+
+  } finally {
+
+    startingLive = false;
 
   }
 
@@ -673,25 +921,90 @@ document.getElementById(
   "stopLive"
 ).onclick = async () => {
 
+  if (endingLive) {
+    return;
+  }
+
+  endingLive = true;
+  stoppingManually = true;
+
+
+  // -------------------------------------------------------
+  // Save ID before clearing state
+  // -------------------------------------------------------
+
+  const currentBroadcastId =
+    broadcastId;
+
+
   try {
 
-    // -----------------------------------------------------
-    // STOP RECORDER
-    // -----------------------------------------------------
+    // =====================================================
+    // STOP MEDIA RECORDER
+    // =====================================================
 
     if (
       recorder &&
       recorder.state !== "inactive"
     ) {
 
-      recorder.stop();
+      try {
+
+        recorder.stop();
+
+      } catch (error) {
+
+        console.warn(
+          "Recorder stop error:",
+          error
+        );
+
+      }
 
     }
 
 
-    // -----------------------------------------------------
+    // =====================================================
+    // STOP BACKEND FIRST
+    // =====================================================
+
+    try {
+
+      await liveApi.stop({
+
+        branchId,
+
+        broadcastId:
+          currentBroadcastId
+
+      });
+
+    } catch (error) {
+
+      console.error(
+        "Backend stop error:",
+        error
+      );
+
+    }
+
+
+    // =====================================================
+    // MARK FIRESTORE ENDED
+    // =====================================================
+
+    if (currentBroadcastId) {
+
+      await endFirestoreBroadcast(
+        currentBroadcastId
+      );
+
+    }
+
+
+    // =====================================================
     // CLOSE WEBSOCKET
-    // -----------------------------------------------------
+    // =====================================================
 
     if (socket) {
 
@@ -701,58 +1014,35 @@ document.getElementById(
 
       } catch (_) {}
 
-      socket = null;
     }
 
-
-    // -----------------------------------------------------
-    // STOP BACKEND SESSION
-    // -----------------------------------------------------
-
-    await liveApi.stop({
-      branchId,
-      broadcastId
-    });
+    socket = null;
 
 
-    // -----------------------------------------------------
-    // UPDATE FIRESTORE
-    // -----------------------------------------------------
-
-    if (broadcastId) {
-
-      await update(
-        COLLECTIONS.BROADCASTS,
-        broadcastId,
-        {
-          status: "ended",
-          updatedAt: new Date()
-        }
-      );
-
-    }
-
-
-    // -----------------------------------------------------
+    // =====================================================
     // STOP MICROPHONE
-    // -----------------------------------------------------
+    // =====================================================
 
     if (stream) {
 
-      stream
-        .getTracks()
-        .forEach(
-          track => track.stop()
-        );
+      try {
+
+        stream
+          .getTracks()
+          .forEach(
+            track => track.stop()
+          );
+
+      } catch (_) {}
 
       stream = null;
 
     }
 
 
-    // -----------------------------------------------------
+    // =====================================================
     // RESET STATE
-    // -----------------------------------------------------
+    // =====================================================
 
     broadcastId = null;
 
@@ -761,21 +1051,8 @@ document.getElementById(
     recorder = null;
 
 
-    document.getElementById(
-      "liveState"
-    ).textContent = "OFFLINE";
+    setLiveUI(false);
 
-    document
-      .getElementById("liveState")
-      .classList.remove("live");
-
-    document.getElementById(
-      "startLive"
-    ).disabled = false;
-
-    document.getElementById(
-      "stopLive"
-    ).disabled = true;
 
     document.getElementById(
       "micState"
@@ -797,10 +1074,24 @@ document.getElementById(
     );
 
 
+    // -----------------------------------------------------
+    // Even if something fails, make sure the UI does not
+    // remain stuck in LIVE.
+    // -----------------------------------------------------
+
+    setLiveUI(false);
+
+
     toast(
-      "Unable to stop cleanly.",
+      "Broadcast stopped locally. Some cleanup may have failed.",
       "error"
     );
+
+
+  } finally {
+
+    endingLive = false;
+    stoppingManually = false;
 
   }
 
