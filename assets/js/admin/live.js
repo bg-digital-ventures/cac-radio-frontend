@@ -46,6 +46,303 @@ let socket = null;
 let broadcastId = null;
 let liveSession = null;
 
+
+// =========================================================
+// LIVE MONITORING
+// =========================================================
+
+let liveStartedAt = null;
+let liveTimerInterval = null;
+
+let audioContext = null;
+let analyser = null;
+let microphoneSource = null;
+let audioAnimationFrame = null;
+
+// =========================================================
+// LIVE TIMER
+// =========================================================
+
+function startLiveTimer() {
+
+  stopLiveTimer();
+
+stopAudioMonitor();
+
+  liveStartedAt = Date.now();
+
+  const timerElement =
+    document.getElementById("liveTimer");
+
+  if (!timerElement) {
+    return;
+  }
+
+  function updateTimer() {
+
+    if (!liveStartedAt) {
+      return;
+    }
+
+    const elapsed =
+      Date.now() - liveStartedAt;
+
+    const totalSeconds =
+      Math.floor(elapsed / 1000);
+
+    const hours =
+      Math.floor(totalSeconds / 3600);
+
+    const minutes =
+      Math.floor(
+        (totalSeconds % 3600) / 60
+      );
+
+    const seconds =
+      totalSeconds % 60;
+
+    timerElement.textContent =
+      `${String(hours).padStart(2, "0")}:` +
+      `${String(minutes).padStart(2, "0")}:` +
+      `${String(seconds).padStart(2, "0")}`;
+  }
+
+  updateTimer();
+
+  liveTimerInterval =
+    setInterval(
+      updateTimer,
+      1000
+    );
+}
+
+
+function stopLiveTimer() {
+
+  if (liveTimerInterval) {
+
+    clearInterval(
+      liveTimerInterval
+    );
+
+    liveTimerInterval = null;
+  }
+
+  liveStartedAt = null;
+
+  const timerElement =
+    document.getElementById("liveTimer");
+
+  if (timerElement) {
+
+    timerElement.textContent =
+      "00:00:00";
+  }
+}
+
+
+// =========================================================
+// MICROPHONE AUDIO VISUALIZER
+// =========================================================
+
+async function startAudioMonitor() {
+
+  if (!stream) {
+    return;
+  }
+
+  try {
+
+    stopAudioMonitor();
+
+    audioContext =
+      new (
+        window.AudioContext ||
+        window.webkitAudioContext
+      )();
+
+    if (
+      audioContext.state === "suspended"
+    ) {
+
+      await audioContext.resume();
+    }
+
+    analyser =
+      audioContext.createAnalyser();
+
+    analyser.fftSize = 256;
+
+    analyser.smoothingTimeConstant =
+      0.75;
+
+    microphoneSource =
+      audioContext.createMediaStreamSource(
+        stream
+      );
+
+    microphoneSource.connect(
+      analyser
+    );
+
+    const data =
+      new Uint8Array(
+        analyser.fftSize
+      );
+
+    function drawAudioLevel() {
+
+      if (!analyser) {
+        return;
+      }
+
+      analyser.getByteTimeDomainData(
+        data
+      );
+
+      let sum = 0;
+
+      for (
+        let i = 0;
+        i < data.length;
+        i++
+      ) {
+
+        const normalized =
+          (data[i] - 128) / 128;
+
+        sum +=
+          normalized *
+          normalized;
+      }
+
+      const rms =
+        Math.sqrt(
+          sum / data.length
+        );
+
+      let level =
+        Math.min(
+          100,
+          Math.round(
+            rms * 300
+          )
+        );
+
+      updateAudioMeter(level);
+
+      audioAnimationFrame =
+        requestAnimationFrame(
+          drawAudioLevel
+        );
+    }
+
+    drawAudioLevel();
+
+    console.log(
+      "Audio monitor started."
+    );
+
+  } catch (error) {
+
+    console.error(
+      "Unable to start audio monitor:",
+      error
+    );
+  }
+}
+
+
+function updateAudioMeter(level) {
+
+  const fill =
+    document.getElementById(
+      "audioMeterFill"
+    );
+
+  const text =
+    document.getElementById(
+      "audioLevelText"
+    );
+
+  if (!fill || !text) {
+    return;
+  }
+
+  fill.style.width =
+    `${level}%`;
+
+  text.textContent =
+    `${level}%`;
+
+  fill.classList.remove(
+    "audio-good",
+    "audio-high",
+    "audio-clipping"
+  );
+
+  if (level >= 90) {
+
+    fill.classList.add(
+      "audio-clipping"
+    );
+
+  } else if (level >= 70) {
+
+    fill.classList.add(
+      "audio-high"
+    );
+
+  } else {
+
+    fill.classList.add(
+      "audio-good"
+    );
+  }
+}
+
+
+function stopAudioMonitor() {
+
+  if (audioAnimationFrame) {
+
+    cancelAnimationFrame(
+      audioAnimationFrame
+    );
+
+    audioAnimationFrame = null;
+  }
+
+  if (microphoneSource) {
+
+    try {
+      microphoneSource.disconnect();
+    } catch (_) {}
+
+    microphoneSource = null;
+  }
+
+  if (analyser) {
+
+    try {
+      analyser.disconnect();
+    } catch (_) {}
+
+    analyser = null;
+  }
+
+  if (audioContext) {
+
+    try {
+      audioContext.close();
+    } catch (_) {}
+
+    audioContext = null;
+  }
+
+  updateAudioMeter(0);
+}
+
 // ---------------------------------------------------------
 // IMPORTANT
 // ---------------------------------------------------------
@@ -744,14 +1041,26 @@ document.getElementById(
     // UI
     // =====================================================
 
-    setLiveUI(true);
+   // =====================================================
+// UI
+// =====================================================
+
+setLiveUI(true);
 
 
-    console.log(
-      "CAC Radio live session started:",
-      result
-    );
+// =====================================================
+// START LIVE MONITORING
+// =====================================================
 
+startLiveTimer();
+
+await startAudioMonitor();
+
+
+console.log(
+  "CAC Radio live session started:",
+  result
+);
 
     if (result.caster) {
 
