@@ -6,7 +6,7 @@ import { toast } from "../components/toast.js";
 
 
 // =========================================================
-// AUTHENTICATION
+// AUTH / PROFILE
 // =========================================================
 
 const profile = await bootAdmin();
@@ -14,11 +14,6 @@ const profile = await bootAdmin();
 if (!profile) {
   throw new Error("Not authenticated");
 }
-
-
-// =========================================================
-// BRANCH INFORMATION
-// =========================================================
 
 const isHQ = profile.role === "hq_admin";
 
@@ -35,14 +30,13 @@ document.getElementById(
   "broadcastIdentity"
 ).textContent = `Broadcasting as ${branchName}`;
 
-
 document.getElementById(
   "hqControls"
 ).hidden = !isHQ;
 
 
 // =========================================================
-// LIVE STATE
+// STATE
 // =========================================================
 
 let stream = null;
@@ -60,7 +54,6 @@ let programmes = await getAll(
   COLLECTIONS.PROGRAMMES
 );
 
-
 if (!isHQ) {
 
   programmes = programmes.filter(
@@ -70,7 +63,6 @@ if (!isHQ) {
   );
 
 }
-
 
 document.getElementById(
   "programmeSelect"
@@ -87,7 +79,7 @@ document.getElementById(
 
 
 // =========================================================
-// LOAD HQ BRANCHES
+// HQ BRANCHES
 // =========================================================
 
 if (isHQ) {
@@ -99,7 +91,6 @@ if (isHQ) {
   ).filter(
     x => x.status === "active"
   );
-
 
   document.getElementById(
     "hqBranchSelect"
@@ -128,10 +119,6 @@ document.getElementById(
 
     if (stream) {
 
-      document.getElementById(
-        "micState"
-      ).textContent = "Microphone ready";
-
       toast(
         "Microphone is already ready.",
         "success"
@@ -140,17 +127,14 @@ document.getElementById(
       return;
     }
 
-
     stream =
       await navigator.mediaDevices.getUserMedia({
         audio: true
       });
 
-
     document.getElementById(
       "micState"
     ).textContent = "Microphone ready";
-
 
     toast(
       "Microphone access granted.",
@@ -163,7 +147,6 @@ document.getElementById(
       "Microphone error:",
       error
     );
-
 
     toast(
       "Microphone permission denied.",
@@ -194,7 +177,6 @@ document.getElementById(
           audio: true
         });
 
-
       document.getElementById(
         "micState"
       ).textContent = "Microphone ready";
@@ -202,7 +184,7 @@ document.getElementById(
 
 
     // -----------------------------------------------------
-    // BROADCAST INFORMATION
+    // BROADCAST DETAILS
     // -----------------------------------------------------
 
     const title =
@@ -212,13 +194,11 @@ document.getElementById(
         .trim() ||
       "Live Broadcast";
 
-
     const presenter =
       document
         .getElementById("presenter")
         .value
         .trim();
-
 
     const programmeId =
       document
@@ -227,27 +207,16 @@ document.getElementById(
 
 
     // -----------------------------------------------------
-    // PREPARE BACKEND LIVE SESSION
+    // PREPARE BACKEND SESSION
     // -----------------------------------------------------
-
-    console.log(
-      "Preparing live session..."
-    );
-
 
     const result =
       await liveApi.start({
-
         branchId,
-
         branchName,
-
         title,
-
         presenter,
-
         programmeId
-
       });
 
 
@@ -259,36 +228,31 @@ document.getElementById(
       );
     }
 
-
     liveSession = result;
 
 
-    console.log(
-      "Backend live session prepared:",
-      result
-    );
-
-
     // -----------------------------------------------------
-    // CREATE FIRESTORE BROADCAST
+    // CREATE FIRESTORE BROADCAST BEFORE WEBSOCKET
+    // -----------------------------------------------------
     //
-    // We do this BEFORE WebSocket connection so the
-    // broadcast ID can be sent to the backend.
-    // -----------------------------------------------------
+    // IMPORTANT:
+    // We create the Firestore document FIRST.
+    //
+    // Then we pass broadcastId to the backend through
+    // the WebSocket URL.
+    //
+    // This means the backend always knows which
+    // Firestore broadcast belongs to this live session.
+    //
 
     broadcastId =
       await add(
         COLLECTIONS.BROADCASTS,
         {
-
           branchId,
-
           branchName,
-
           title,
-
           presenter,
-
           programmeId,
 
           status: "live",
@@ -309,7 +273,7 @@ document.getElementById(
 
 
     console.log(
-      "Firestore broadcast created:",
+      "Created Firestore broadcast:",
       broadcastId
     );
 
@@ -319,10 +283,7 @@ document.getElementById(
     // -----------------------------------------------------
 
     const wsBase =
-      API_BASE.replace(
-        /^http/,
-        "ws"
-      );
+      API_BASE.replace(/^http/, "ws");
 
 
     const wsUrl =
@@ -337,15 +298,6 @@ document.getElementById(
     );
 
 
-    console.log(
-      "WebSocket URL:",
-      wsUrl.replace(
-        /token=[^&]+/,
-        "token=HIDDEN"
-      )
-    );
-
-
     // -----------------------------------------------------
     // CONNECT WEBSOCKET
     // -----------------------------------------------------
@@ -357,15 +309,8 @@ document.getElementById(
     await new Promise(
       (resolve, reject) => {
 
-        let settled = false;
-
-
         const timeout =
           setTimeout(() => {
-
-            if (settled) return;
-
-            settled = true;
 
             reject(
               new Error(
@@ -378,10 +323,6 @@ document.getElementById(
 
         socket.onopen = () => {
 
-          if (settled) return;
-
-          settled = true;
-
           clearTimeout(timeout);
 
           console.log(
@@ -389,22 +330,20 @@ document.getElementById(
           );
 
           resolve();
+
         };
 
 
         socket.onerror = () => {
 
-          if (settled) return;
-
-          settled = true;
-
           clearTimeout(timeout);
 
           reject(
             new Error(
-              "Live WebSocket connection failed."
+              "WebSocket connection failed."
             )
           );
+
         };
 
 
@@ -416,20 +355,8 @@ document.getElementById(
             event.reason
           );
 
-
-          if (!settled) {
-
-            settled = true;
-
-            clearTimeout(timeout);
-
-            reject(
-              new Error(
-                `WebSocket rejected by backend (${event.code}).`
-              )
-            );
-          }
         };
+
       }
     );
 
@@ -446,12 +373,6 @@ document.getElementById(
         : "audio/webm";
 
 
-    console.log(
-      "Using recorder format:",
-      mime
-    );
-
-
     recorder =
       new MediaRecorder(
         stream,
@@ -461,71 +382,114 @@ document.getElementById(
       );
 
 
-    recorder.ondataavailable =
-      event => {
+    recorder.ondataavailable = event => {
 
-        if (
-          !event.data ||
-          !event.data.size
-        ) {
-          return;
-        }
+      if (
+        event.data.size &&
+        socket &&
+        socket.readyState === WebSocket.OPEN
+      ) {
 
-
-        if (
-          socket &&
-          socket.readyState ===
-            WebSocket.OPEN
-        ) {
-
-          socket.send(
-            event.data
-          );
-
-        } else {
-
-          console.warn(
-            "Audio chunk not sent because WebSocket is not open."
-          );
-        }
-      };
-
-
-    recorder.onerror =
-      event => {
-
-        console.error(
-          "MediaRecorder error:",
-          event
+        socket.send(
+          event.data
         );
-      };
+
+      }
+
+    };
+
+
+    recorder.onerror = event => {
+
+      console.error(
+        "MediaRecorder error:",
+        event
+      );
+
+    };
 
 
     // -----------------------------------------------------
-    // WEBSOCKET CLOSED
+    // HANDLE WEBSOCKET CLOSE
     // -----------------------------------------------------
 
-    socket.onclose =
-      event => {
+    socket.onclose = async event => {
 
-        console.warn(
-          "Live WebSocket closed:",
-          event.code,
-          event.reason
-        );
+      console.warn(
+        "Live connection closed.",
+        event.code,
+        event.reason
+      );
 
+
+      // If recorder is still running,
+      // stop it.
+
+      try {
 
         if (
           recorder &&
           recorder.state !== "inactive"
         ) {
 
-          try {
-            recorder.stop();
-          } catch (_) {}
+          recorder.stop();
 
         }
-      };
+
+      } catch (_) {}
+
+
+      // Only update Firestore if this was
+      // an unexpected disconnect.
+
+      if (broadcastId) {
+
+        try {
+
+          await update(
+            COLLECTIONS.BROADCASTS,
+            broadcastId,
+            {
+              status: "ended",
+              updatedAt: new Date()
+            }
+          );
+
+          console.log(
+            "Broadcast marked ended after WebSocket close."
+          );
+
+        } catch (error) {
+
+          console.error(
+            "Unable to update broadcast after disconnect:",
+            error
+          );
+
+        }
+
+      }
+
+
+      // Reset UI
+
+      document.getElementById(
+        "liveState"
+      ).textContent = "OFFLINE";
+
+      document
+        .getElementById("liveState")
+        .classList.remove("live");
+
+      document.getElementById(
+        "startLive"
+      ).disabled = false;
+
+      document.getElementById(
+        "stopLive"
+      ).disabled = true;
+
+    };
 
 
     // -----------------------------------------------------
@@ -537,37 +501,56 @@ document.getElementById(
     );
 
 
-    console.log(
-      "Microphone recording started."
-    );
-
-
     // -----------------------------------------------------
-    // UPDATE UI
+    // UI
     // -----------------------------------------------------
 
     document.getElementById(
       "liveState"
     ).textContent = "LIVE";
 
-
     document
-      .getElementById(
-        "liveState"
-      )
-      .classList.add(
-        "live"
-      );
-
+      .getElementById("liveState")
+      .classList.add("live");
 
     document.getElementById(
       "startLive"
     ).disabled = true;
 
-
     document.getElementById(
       "stopLive"
     ).disabled = false;
+
+
+    console.log(
+      "CAC Radio live session:",
+      result
+    );
+
+
+    if (result.caster) {
+
+      console.log(
+        "Caster.fm Host:",
+        result.caster.host
+      );
+
+      console.log(
+        "Caster.fm Port:",
+        result.caster.port
+      );
+
+      console.log(
+        "Caster.fm Mount:",
+        result.caster.mount
+      );
+
+      console.log(
+        "Caster.fm Username:",
+        result.caster.username
+      );
+
+    }
 
 
     toast(
@@ -585,7 +568,7 @@ document.getElementById(
 
 
     // -----------------------------------------------------
-    // STOP RECORDER IF START FAILED
+    // STOP RECORDER
     // -----------------------------------------------------
 
     try {
@@ -602,9 +585,6 @@ document.getElementById(
     } catch (_) {}
 
 
-    recorder = null;
-
-
     // -----------------------------------------------------
     // CLOSE SOCKET
     // -----------------------------------------------------
@@ -612,13 +592,12 @@ document.getElementById(
     try {
 
       if (socket) {
+
         socket.close();
+
       }
 
     } catch (_) {}
-
-
-    socket = null;
 
 
     // -----------------------------------------------------
@@ -635,14 +614,15 @@ document.getElementById(
     } catch (cleanupError) {
 
       console.error(
-        "Backend cleanup error:",
+        "Backend cleanup failed:",
         cleanupError
       );
+
     }
 
 
     // -----------------------------------------------------
-    // MARK FIRESTORE BROADCAST ENDED
+    // CLEAN FIRESTORE BROADCAST
     // -----------------------------------------------------
 
     if (broadcastId) {
@@ -653,27 +633,24 @@ document.getElementById(
           COLLECTIONS.BROADCASTS,
           broadcastId,
           {
-
             status: "ended",
-
-            updatedAt:
-              new Date()
-
+            updatedAt: new Date()
           }
         );
 
       } catch (firestoreError) {
 
         console.error(
-          "Firestore cleanup error:",
+          "Firestore cleanup failed:",
           firestoreError
         );
+
       }
+
     }
 
 
     broadcastId = null;
-
     liveSession = null;
 
 
@@ -682,7 +659,9 @@ document.getElementById(
       "Unable to start live.",
       "error"
     );
+
   }
+
 };
 
 
@@ -705,14 +684,9 @@ document.getElementById(
       recorder.state !== "inactive"
     ) {
 
-      try {
-        recorder.stop();
-      } catch (_) {}
+      recorder.stop();
 
     }
-
-
-    recorder = null;
 
 
     // -----------------------------------------------------
@@ -722,13 +696,13 @@ document.getElementById(
     if (socket) {
 
       try {
+
         socket.close();
+
       } catch (_) {}
 
+      socket = null;
     }
-
-
-    socket = null;
 
 
     // -----------------------------------------------------
@@ -736,12 +710,27 @@ document.getElementById(
     // -----------------------------------------------------
 
     await liveApi.stop({
-
       branchId,
-
       broadcastId
-
     });
+
+
+    // -----------------------------------------------------
+    // UPDATE FIRESTORE
+    // -----------------------------------------------------
+
+    if (broadcastId) {
+
+      await update(
+        COLLECTIONS.BROADCASTS,
+        broadcastId,
+        {
+          status: "ended",
+          updatedAt: new Date()
+        }
+      );
+
+    }
 
 
     // -----------------------------------------------------
@@ -753,36 +742,11 @@ document.getElementById(
       stream
         .getTracks()
         .forEach(
-          track =>
-            track.stop()
+          track => track.stop()
         );
 
       stream = null;
-    }
 
-
-    // -----------------------------------------------------
-    // MARK FIRESTORE BROADCAST ENDED
-    // -----------------------------------------------------
-
-    if (broadcastId) {
-
-      await update(
-
-        COLLECTIONS.BROADCASTS,
-
-        broadcastId,
-
-        {
-
-          status: "ended",
-
-          updatedAt:
-            new Date()
-
-        }
-
-      );
     }
 
 
@@ -794,30 +758,24 @@ document.getElementById(
 
     liveSession = null;
 
+    recorder = null;
+
 
     document.getElementById(
       "liveState"
     ).textContent = "OFFLINE";
 
-
     document
-      .getElementById(
-        "liveState"
-      )
-      .classList.remove(
-        "live"
-      );
-
+      .getElementById("liveState")
+      .classList.remove("live");
 
     document.getElementById(
       "startLive"
     ).disabled = false;
 
-
     document.getElementById(
       "stopLive"
     ).disabled = true;
-
 
     document.getElementById(
       "micState"
@@ -840,11 +798,12 @@ document.getElementById(
 
 
     toast(
-      error?.message ||
       "Unable to stop cleanly.",
       "error"
     );
+
   }
+
 };
 
 
@@ -900,7 +859,9 @@ document.getElementById(
         "Unable to connect branch to HQ.",
         "error"
       );
+
     }
+
   }
 );
 
@@ -938,6 +899,8 @@ document.getElementById(
         "Unable to disconnect relay.",
         "error"
       );
+
     }
+
   }
 );
