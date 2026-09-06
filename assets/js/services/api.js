@@ -3,7 +3,7 @@ export const API_BASE =
   "https://cac-radio-backend.onrender.com";
 
 async function req(path, options = {}) {
-  const r = await fetch(API_BASE + path, {
+  const response = await fetch(API_BASE + path, {
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -11,14 +11,32 @@ async function req(path, options = {}) {
     }
   });
 
-  if (!r.ok) {
-    throw new Error(await r.text());
+  if (!response.ok) {
+    let message = `Request failed (${response.status})`;
+
+    try {
+      const data = await response.json();
+      message = data?.detail || data?.message || message;
+    } catch {
+      try {
+        message = (await response.text()) || message;
+      } catch {}
+    }
+
+    throw new Error(message);
   }
 
-  return r.json();
+  return response.json();
 }
 
 export const liveApi = {
+  health: () => req("/api/health"),
+
+  casterConfig: () => req("/api/caster/config"),
+
+  session: (branchId) =>
+    req(`/api/live/session/${encodeURIComponent(branchId)}`),
+
   start: (data) =>
     req("/api/live/start", {
       method: "POST",
